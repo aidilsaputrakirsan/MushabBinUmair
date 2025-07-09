@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelas L3 - Mushab Bin Umair | Hafalan Juz 30</title>
+    <meta name="description" content="Tracking hafalan Juz 30 untuk Kelas L3 Mushab Bin Umair">
+    <meta name="theme-color" content="#1e40af">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);
+            min-height: 100vh;
+            color: #333;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,215,0,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255,215,0,0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0;
+            min-height: 100vh;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #064e3b, #065f46);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border-bottom: 3px solid #fbbf24;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fbbf24;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            opacity: 0.95;
+            font-size: 14px;
+            color: #d1fae5;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            display: none;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        .person-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .person-card {
+            background: linear-gradient(135deg, #ffffff, #f9fafb);
+            border-radius: 20px;
+            padding: 25px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #d1fae5;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .person-card::before {
+            content: "☪";
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 18px;
+            color: #fbbf24;
+            opacity: 0.6;
+        }
+
+        .person-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(6, 95, 70, 0.2);
+            border-color: #fbbf24;
+        }
+
+        .person-card:active {
+            transform: translateY(-4px);
+        }
+
+        .person-avatar {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #059669, #047857);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            border: 3px solid #fbbf24;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .person-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1f2937;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .surah-list {
+            display: none;
+        }
+
+        .surah-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 2px solid #f3f4f6;
+            transition: all 0.2s ease;
+        }
+
+        .surah-item.completed {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+        }
+
+        .surah-info {
+            flex: 1;
+        }
+
+        .surah-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+
+        .surah-number {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background: #e5e7eb;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #10b981;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(22px);
+        }
+
+        .stats-summary {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #92400e;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #a16207;
+            margin-top: 2px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 380px) {
+            .person-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .main-content {
+                padding: 15px;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(6, 95, 70, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        .loading-content {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fbbf24;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 999;
+            display: none;
+        }
+
+        .connection-status.offline {
+            background: #fca5a5;
+            color: #7f1d1d;
+            border: 2px solid #f87171;
+            display: block;
+        }
+
+        .connection-status.online {
+            background: #a7f3d0;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <div>Memuat data...</div>
+            </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="connection-status" id="connection-status">
+            📶 Mode Offline
+        </div>
+
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">←</button>
+            <h1 id="header-title">Kelas L3 - Mushab Bin Umair</h1>
+            <p id="header-subtitle">Tracking Hafalan Juz 30</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Halaman Utama -->
+            <div id="main-page">
+                <div class="stats-summary">
+                    <div class="stats-title">📊 Statistik Keluarga</div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number" id="total-completed">0</div>
+                            <div class="stat-label">Surah Selesai</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="avg-progress">0%</div>
+                            <div class="stat-label">Rata-rata</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="leading-person">-</div>
+                            <div class="stat-label">Terdepan</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="person-grid" id="person-grid">
+                    <!-- Person cards will be generated here -->
+                </div>
+            </div>
+
+            <!-- Halaman Detail Person -->
+            <div id="detail-page" class="surah-list">
+                <div id="surah-container">
+                    <!-- Surah items will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data surah Juz 30
+        const surahList = [
+            {number: 78, name: "An-Naba", arabic: "النبأ"},
+            {number: 79, name: "An-Nazi'at", arabic: "النازعات"},
+            {number: 80, name: "Abasa", arabic: "عبس"},
+            {number: 81, name: "At-Takwir", arabic: "التكوير"},
+            {number: 82, name: "Al-Infitar", arabic: "الإنفطار"},
+            {number: 83, name: "Al-Mutaffifin", arabic: "المطففين"},
+            {number: 84, name: "Al-Inshiqaq", arabic: "الإنشقاق"},
+            {number: 85, name: "Al-Buruj", arabic: "البروج"},
+            {number: 86, name: "At-Tariq", arabic: "الطارق"},
+            {number: 87, name: "Al-A'la", arabic: "الأعلى"},
+            {number: 88, name: "Al-Ghashiyah", arabic: "الغاشية"},
+            {number: 89, name: "Al-Fajr", arabic: "الفجر"},
+            {number: 90, name: "Al-Balad", arabic: "البلد"},
+            {number: 91, name: "Ash-Shams", arabic: "الشمس"},
+            {number: 92, name: "Al-Lail", arabic: "الليل"},
+            {number: 93, name: "Ad-Duha", arabic: "الضحى"},
+            {number: 94, name: "Ash-Sharh", arabic: "الشرح"},
+            {number: 95, name: "At-Tin", arabic: "التين"},
+            {number: 96, name: "Al-Alaq", arabic: "العلق"},
+            {number: 97, name: "Al-Qadr", arabic: "القدر"},
+            {number: 98, name: "Al-Bayyinah", arabic: "البينة"},
+            {number: 99, name: "Az-Zalzalah", arabic: "الزلزلة"},
+            {number: 100, name: "Al-Adiyat", arabic: "العاديات"},
+            {number: 101, name: "Al-Qari'ah", arabic: "القارعة"},
+            {number: 102, name: "At-Takathur", arabic: "التكاثر"},
+            {number: 103, name: "Al-Asr", arabic: "العصر"},
+            {number: 104, name: "Al-Humazah", arabic: "الهمزة"},
+            {number: 105, name: "Al-Fil", arabic: "الفيل"},
+            {number: 106, name: "Quraish", arabic: "قريش"},
+            {number: 107, name: "Al-Ma'un", arabic: "الماعون"},
+            {number: 108, name: "Al-Kawthar", arabic: "الكوثر"},
+            {number: 109, name: "Al-Kafirun", arabic: "الكافرون"},
+            {number: 110, name: "An-Nasr", arabic: "النصر"},
+            {number: 111, name: "Al-Masad", arabic: "المسد"},
+            {number: 112, name: "Al-Ikhlas", arabic: "الإخلاص"},
+            {number: 113, name: "Al-Falaq", arabic: "الفلق"},
+            {number: 114, name: "An-Nas", arabic: "الناس"}
+        ];
+
+        // Data nama-nama Kelas L3 Mushab Bin Umair
+        const familyNames = ["Ahmad", "Abdullah", "Muhammad", "Usman", "Khalid", "Yusuf"];
+
+        // State management
+        let currentPerson = null;
+        let hafalanData = {};
+
+        // Initialize app
+        async function initApp() {
+            updateConnectionStatus();
+            showLoading(true);
+            try {
+                await loadData();
+                renderMainPage();
+                await updateStats();
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showError('Gagal memuat data. Silakan refresh halaman.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // API call helper function
+        async function apiCall(action, method = 'GET', data = null) {
+            const url = method === 'GET' ? 
+                `${API_BASE_URL}?action=${action}` : 
+                API_BASE_URL;
+            
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+            
+            if (method === 'POST' && data) {
+                options.body = JSON.stringify({action, ...data});
+            }
+            
+            try {
+                const response = await fetch(url, options);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'API call failed');
+                }
+                
+                return result;
+            } catch (error) {
+                console.error(`API call failed for ${action}:`, error);
+                throw error;
+            }
+        }
+
+        // Load data from backend
+        async function loadData() {
+            try {
+                const result = await apiCall('getAllData');
+                hafalanData = result.data;
+                return hafalanData;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Fallback to localStorage for offline mode
+                const saved = localStorage.getItem('hafalanJuz30');
+                if (saved) {
+                    hafalanData = JSON.parse(saved);
+                } else {
+                    // Initialize empty data if no backend and no localStorage
+                    familyNames.forEach(name => {
+                        hafalanData[name] = {};
+                        surahList.forEach(surah => {
+                            hafalanData[name][surah.number] = false;
+                        });
+                    });
+                }
+                throw error;
+            }
+        }
+
+        // Update hafalan status to backend
+        async function updateHafalanToBackend(nama, surahNumber, status) {
+            try {
+                const result = await apiCall('updateHafalan', 'POST', {
+                    nama: nama,
+                    surahNumber: surahNumber,
+                    status: status
+                });
+                
+                // Also save to localStorage as backup
+                localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
+                
+                return result;
+            } catch (error) {
+                console.error('Error updating to backend:', error);
+                // Still save to localStorage for offline functionality
+                localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
+                throw error;
+            }
+        }
+
+        // Show loading indicator
+        function showLoading(show) {
+            isLoading = show;
+            const overlay = document.getElementById('loading-overlay');
+            if (show) {
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            } else {
+                overlay.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // Update connection status indicator
+        function updateConnectionStatus() {
+            const isOnline = checkConnection();
+            const statusElement = document.getElementById('connection-status');
+            
+            if (!isOnline) {
+                statusElement.className = 'connection-status offline';
+                statusElement.textContent = '📶 Mode Offline';
+                statusElement.style.display = 'block';
+            } else {
+                statusElement.className = 'connection-status online';
+                statusElement.textContent = '🌐 Terhubung';
+                statusElement.style.display = 'block';
+                // Hide online status after 3 seconds
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            alert('❌ ' + message);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            // You could implement a toast notification here
+            console.log('✅ ' + message);
+        }
+
+        // Render main page
+        function renderMainPage() {
+            const grid = document.getElementById('person-grid');
+            grid.innerHTML = '';
+
+            familyNames.forEach(name => {
+                const progress = calculateProgress(name);
+                const completed = Object.values(hafalanData[name] || {}).filter(Boolean).length;
+                
+                const card = document.createElement('div');
+                card.className = 'person-card fade-in';
+                card.onclick = () => openPersonDetail(name);
+                
+                card.innerHTML = `
+                    <div class="person-avatar">${name.charAt(0).toUpperCase()}</div>
+                    <div class="person-name">${name}</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                    <div class="progress-text">${completed}/37 surah</div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Calculate progress percentage
+        function calculateProgress(name) {
+            const personData = hafalanData[name] || {};
+            const completed = Object.values(personData).filter(Boolean).length;
+            return Math.round((completed / surahList.length) * 100);
+        }
+
+        // Open person detail page
+        function openPersonDetail(name) {
+            currentPerson = name;
+            document.getElementById('main-page').style.display = 'none';
+            document.getElementById('detail-page').style.display = 'block';
+            document.querySelector('.back-btn').style.display = 'block';
+            document.getElementById('header-title').textContent = `Hafalan ${name}`;
+            document.getElementById('header-subtitle').textContent = `Progress: ${calculateProgress(name)}%`;
+            
+            renderSurahList(name);
+        }
+
+        // Render surah list for person
+        function renderSurahList(name) {
+            const container = document.getElementById('surah-container');
+            container.innerHTML = '';
+
+            surahList.forEach(surah => {
+                const isCompleted = hafalanData[name][surah.number] || false;
+                
+                const item = document.createElement('div');
+                item.className = `surah-item fade-in ${isCompleted ? 'completed' : ''}`;
+                
+                item.innerHTML = `
+                    <div class="surah-info">
+                        <div class="surah-name">${surah.name}</div>
+                        <div class="surah-number">Surah ${surah.number}</div>
+                    </div>
+                    <div class="toggle-switch ${isCompleted ? 'active' : ''}" onclick="toggleSurah('${name}', ${surah.number})">
+                        <div class="toggle-slider"></div>
+                    </div>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        // Toggle surah completion
+        function toggleSurah(name, surahNumber) {
+            hafalanData[name][surahNumber] = !hafalanData[name][surahNumber];
+            saveData();
+            renderSurahList(name);
+            updateStats();
+            
+            // Update header progress
+            document.getElementById('header-subtitle').textContent = `Progress: ${calculateProgress(name)}%`;
+        }
+
+        // Go back to main page
+        function goBack() {
+            document.getElementById('main-page').style.display = 'block';
+            document.getElementById('detail-page').style.display = 'none';
+            document.querySelector('.back-btn').style.display = 'none';
+            document.getElementById('header-title').textContent = 'Kelas L3 - Mushab Bin Umair';
+            document.getElementById('header-subtitle').textContent = 'Tracking Hafalan Juz 30';
+            
+            renderMainPage();
+            updateStats();
+        }
+
+        // Update statistics
+        function updateStats() {
+            let totalCompleted = 0;
+            let totalProgress = 0;
+            let leadingPerson = '';
+            let maxProgress = 0;
+
+            familyNames.forEach(name => {
+                const completed = Object.values(hafalanData[name] || {}).filter(Boolean).length;
+                const progress = calculateProgress(name);
+                
+                totalCompleted += completed;
+                totalProgress += progress;
+                
+                if (progress > maxProgress) {
+                    maxProgress = progress;
+                    leadingPerson = name;
+                }
+            });
+
+            document.getElementById('total-completed').textContent = totalCompleted;
+            document.getElementById('avg-progress').textContent = Math.round(totalProgress / familyNames.length) + '%';
+            document.getElementById('leading-person').textContent = leadingPerson || '-';
+        }
+
+        // Initialize app when page loads
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
