@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kelas L3 - Mushab Bin Umair | Hafalan Juz 30</title>
     <meta name="description" content="Tracking hafalan Juz 30 untuk Kelas L3 Mushab Bin Umair">
-    <meta name="theme-color" content="#1e40af">
+    <meta name="theme-color" content="#065f46">
     
     <style>
         * {
@@ -45,6 +45,64 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(6, 95, 70, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        .loading-content {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fbbf24;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 999;
+            display: none;
+        }
+
+        .connection-status.offline {
+            background: #fca5a5;
+            color: #7f1d1d;
+            border: 2px solid #f87171;
+            display: block;
+        }
+
+        .connection-status.online {
+            background: #a7f3d0;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
         .header {
             background: linear-gradient(135deg, #064e3b, #065f46);
             color: white;
@@ -79,15 +137,17 @@
             background: rgba(255,255,255,0.2);
             border: none;
             color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 10px 15px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 20px;
             display: none;
+            border: 2px solid rgba(251, 191, 36, 0.5);
         }
 
         .back-btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(251, 191, 36, 0.3);
+            border-color: #fbbf24;
         }
 
         .main-content {
@@ -159,23 +219,26 @@
 
         .progress-bar {
             width: 100%;
-            height: 8px;
+            height: 10px;
             background: #e5e7eb;
-            border-radius: 4px;
+            border-radius: 5px;
             overflow: hidden;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            border: 1px solid #d1fae5;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #10b981, #059669);
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
             transition: width 0.3s ease;
-            border-radius: 4px;
+            border-radius: 5px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .progress-text {
-            font-size: 12px;
-            color: #6b7280;
+            font-size: 13px;
+            color: #065f46;
+            font-weight: 600;
         }
 
         .surah-list {
@@ -183,20 +246,32 @@
         }
 
         .surah-item {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff, #f9fafb);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border: 2px solid #f3f4f6;
+            border: 2px solid #d1fae5;
             transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            position: relative;
         }
 
         .surah-item.completed {
-            border-color: #10b981;
-            background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            box-shadow: 0 6px 12px rgba(251, 191, 36, 0.15);
+        }
+
+        .surah-item.completed::after {
+            content: "✓";
+            position: absolute;
+            right: 80px;
+            color: #059669;
+            font-weight: bold;
+            font-size: 18px;
         }
 
         .surah-info {
@@ -204,60 +279,75 @@
         }
 
         .surah-name {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 2px;
+            font-size: 17px;
+            font-weight: 700;
+            color: #065f46;
+            margin-bottom: 4px;
         }
 
         .surah-number {
-            font-size: 12px;
-            color: #6b7280;
+            font-size: 13px;
+            color: #047857;
+            font-weight: 500;
         }
 
         .toggle-switch {
             position: relative;
-            width: 50px;
-            height: 28px;
+            width: 55px;
+            height: 32px;
             background: #e5e7eb;
-            border-radius: 14px;
+            border-radius: 16px;
             cursor: pointer;
             transition: background 0.3s ease;
+            border: 2px solid #d1d5db;
         }
 
         .toggle-switch.active {
-            background: #10b981;
+            background: #fbbf24;
+            border-color: #f59e0b;
         }
 
         .toggle-slider {
             position: absolute;
             top: 2px;
             left: 2px;
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             background: white;
             border-radius: 50%;
             transition: transform 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
 
         .toggle-switch.active .toggle-slider {
-            transform: translateX(22px);
+            transform: translateX(23px);
         }
 
         .stats-summary {
             background: linear-gradient(135deg, #fef3c7, #fde68a);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
             text-align: center;
+            border: 2px solid #fbbf24;
+            box-shadow: 0 6px 12px rgba(251, 191, 36, 0.2);
+            position: relative;
+        }
+
+        .stats-summary::before {
+            content: "📊";
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-size: 24px;
         }
 
         .stats-title {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 700;
             color: #92400e;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         .stats-grid {
@@ -282,38 +372,6 @@
             margin-top: 2px;
         }
 
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
         @media (max-width: 380px) {
             .person-grid {
                 grid-template-columns: 1fr;
@@ -326,68 +384,6 @@
             .main-content {
                 padding: 15px;
             }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(6, 95, 70, 0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            color: white;
-        }
-
-        .loading-content {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fbbf24;
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto 15px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .connection-status {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            z-index: 999;
-            display: none;
-        }
-
-        .connection-status.offline {
-            background: #fca5a5;
-            color: #7f1d1d;
-            border: 2px solid #f87171;
-            display: block;
-        }
-
-        .connection-status.online {
-            background: #a7f3d0;
-            color: #065f46;
-            border: 2px solid #10b981;
         }
 
         .fade-in {
@@ -425,7 +421,7 @@
             <!-- Halaman Utama -->
             <div id="main-page">
                 <div class="stats-summary">
-                    <div class="stats-title">📊 Statistik Keluarga</div>
+                    <div class="stats-title">Statistik Kelas</div>
                     <div class="stats-grid">
                         <div class="stat-item">
                             <div class="stat-number" id="total-completed">0</div>
@@ -457,6 +453,9 @@
     </div>
 
     <script>
+        // API Configuration dengan URL GAS yang sudah di-deploy
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzqFOcR9Af_f0GDMY1w5N_XTxa7eCpo45Eff_5sZ0HRyrTqiHKE4uimgHHHM-d80jbD6g/exec';
+        
         // Data surah Juz 30
         const surahList = [
             {number: 78, name: "An-Naba", arabic: "النبأ"},
@@ -504,6 +503,7 @@
         // State management
         let currentPerson = null;
         let hafalanData = {};
+        let isLoading = false;
 
         // Initialize app
         async function initApp() {
@@ -515,7 +515,11 @@
                 await updateStats();
             } catch (error) {
                 console.error('Error initializing app:', error);
-                showError('Gagal memuat data. Silakan refresh halaman.');
+                showError('Gagal memuat data. Aplikasi akan menggunakan mode offline.');
+                // Load from localStorage as fallback
+                loadOfflineData();
+                renderMainPage();
+                updateStatsLocal();
             } finally {
                 showLoading(false);
             }
@@ -558,23 +562,29 @@
             try {
                 const result = await apiCall('getAllData');
                 hafalanData = result.data;
+                // Save to localStorage as backup
+                localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
                 return hafalanData;
             } catch (error) {
-                console.error('Error loading data:', error);
-                // Fallback to localStorage for offline mode
-                const saved = localStorage.getItem('hafalanJuz30');
-                if (saved) {
-                    hafalanData = JSON.parse(saved);
-                } else {
-                    // Initialize empty data if no backend and no localStorage
-                    familyNames.forEach(name => {
-                        hafalanData[name] = {};
-                        surahList.forEach(surah => {
-                            hafalanData[name][surah.number] = false;
-                        });
-                    });
-                }
+                console.error('Error loading data from backend:', error);
                 throw error;
+            }
+        }
+
+        // Load data from localStorage (offline mode)
+        function loadOfflineData() {
+            const saved = localStorage.getItem('hafalanJuz30');
+            if (saved) {
+                hafalanData = JSON.parse(saved);
+            } else {
+                // Initialize empty data if no localStorage
+                familyNames.forEach(name => {
+                    hafalanData[name] = {};
+                    surahList.forEach(surah => {
+                        hafalanData[name][surah.number] = false;
+                    });
+                });
+                localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
             }
         }
 
@@ -639,8 +649,12 @@
 
         // Show success message
         function showSuccess(message) {
-            // You could implement a toast notification here
             console.log('✅ ' + message);
+        }
+
+        // Connection status checker
+        function checkConnection() {
+            return navigator.onLine;
         }
 
         // Render main page
@@ -714,30 +728,58 @@
         }
 
         // Toggle surah completion
-        function toggleSurah(name, surahNumber) {
-            hafalanData[name][surahNumber] = !hafalanData[name][surahNumber];
-            saveData();
+        async function toggleSurah(name, surahNumber) {
+            if (isLoading) return; // Prevent multiple simultaneous requests
+            
+            const currentStatus = hafalanData[name][surahNumber] || false;
+            const newStatus = !currentStatus;
+            
+            // Optimistically update UI
+            hafalanData[name][surahNumber] = newStatus;
             renderSurahList(name);
-            updateStats();
-            
-            // Update header progress
             document.getElementById('header-subtitle').textContent = `Progress: ${calculateProgress(name)}%`;
-        }
-
-        // Go back to main page
-        function goBack() {
-            document.getElementById('main-page').style.display = 'block';
-            document.getElementById('detail-page').style.display = 'none';
-            document.querySelector('.back-btn').style.display = 'none';
-            document.getElementById('header-title').textContent = 'Kelas L3 - Mushab Bin Umair';
-            document.getElementById('header-subtitle').textContent = 'Tracking Hafalan Juz 30';
             
-            renderMainPage();
-            updateStats();
+            try {
+                showLoading(true);
+                await updateHafalanToBackend(name, surahNumber, newStatus);
+                showSuccess(`Hafalan ${name} untuk ${getSurahName(surahNumber)} berhasil diupdate!`);
+                await updateStats(); // Refresh stats from backend
+            } catch (error) {
+                // Revert on error
+                hafalanData[name][surahNumber] = currentStatus;
+                renderSurahList(name);
+                document.getElementById('header-subtitle').textContent = `Progress: ${calculateProgress(name)}%`;
+                showError('Gagal menyimpan perubahan. Data disimpan secara offline.');
+                updateStatsLocal(); // Update with local calculation
+            } finally {
+                showLoading(false);
+            }
         }
 
-        // Update statistics
-        function updateStats() {
+        // Helper function to get surah name by number
+        function getSurahName(surahNumber) {
+            const surah = surahList.find(s => s.number === surahNumber);
+            return surah ? surah.name : `Surah ${surahNumber}`;
+        }
+
+        // Update statistics from backend
+        async function updateStats() {
+            try {
+                const result = await apiCall('getProgress');
+                const stats = result.data.summary;
+                
+                document.getElementById('total-completed').textContent = stats.totalCompleted;
+                document.getElementById('avg-progress').textContent = stats.averageProgress + '%';
+                document.getElementById('leading-person').textContent = stats.leadingPerson || '-';
+            } catch (error) {
+                console.error('Error updating stats from backend:', error);
+                // Fallback to local calculation
+                updateStatsLocal();
+            }
+        }
+
+        // Fallback function for local stats calculation
+        function updateStatsLocal() {
             let totalCompleted = 0;
             let totalProgress = 0;
             let leadingPerson = '';
@@ -761,8 +803,51 @@
             document.getElementById('leading-person').textContent = leadingPerson || '-';
         }
 
+        // Go back to main page
+        async function goBack() {
+            document.getElementById('main-page').style.display = 'block';
+            document.getElementById('detail-page').style.display = 'none';
+            document.querySelector('.back-btn').style.display = 'none';
+            document.getElementById('header-title').textContent = 'Kelas L3 - Mushab Bin Umair';
+            document.getElementById('header-subtitle').textContent = 'Tracking Hafalan Juz 30';
+            
+            // Refresh data when going back
+            try {
+                showLoading(true);
+                await loadData();
+                renderMainPage();
+                await updateStats();
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                renderMainPage();
+                updateStatsLocal();
+            } finally {
+                showLoading(false);
+            }
+        }
+
         // Initialize app when page loads
         window.addEventListener('load', initApp);
+
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            console.log('Koneksi tersambung kembali');
+            updateConnectionStatus();
+            // Optionally refresh data when back online
+            if (!isLoading) {
+                loadData().then(() => {
+                    renderMainPage();
+                    updateStats();
+                }).catch(() => {
+                    console.log('Still using offline mode');
+                });
+            }
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('Koneksi terputus - mode offline');
+            updateConnectionStatus();
+        });
     </script>
 </body>
 </html>
