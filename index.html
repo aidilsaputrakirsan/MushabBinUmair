@@ -509,14 +509,30 @@
         async function initApp() {
             updateConnectionStatus();
             showLoading(true);
+            
+            // First, test the API connection
+            try {
+                console.log('Testing API connection...');
+                await apiCall('test');
+                console.log('API connection successful!');
+            } catch (error) {
+                console.error('API connection failed:', error);
+                showError('Tidak dapat terhubung ke server. Menggunakan mode offline.');
+                loadOfflineData();
+                renderMainPage();
+                updateStatsLocal();
+                showLoading(false);
+                return;
+            }
+            
             try {
                 await loadData();
                 renderMainPage();
                 await updateStats();
+                showSuccess('Data berhasil dimuat dari server!');
             } catch (error) {
-                console.error('Error initializing app:', error);
-                showError('Gagal memuat data. Aplikasi akan menggunakan mode offline.');
-                // Load from localStorage as fallback
+                console.error('Error loading data:', error);
+                showError('Gagal memuat data dari server. Menggunakan data offline.');
                 loadOfflineData();
                 renderMainPage();
                 updateStatsLocal();
@@ -525,14 +541,16 @@
             }
         }
 
-        // API call helper function
-        async function apiCall(action, method = 'GET', data = null) {
+        // API call helper function dengan CORS handling
+        async function apiCall(action, method = 'GET', data = null, retries = 3) {
             const url = method === 'GET' ? 
-                `${API_BASE_URL}?action=${action}` : 
+                `${API_BASE_URL}?action=${action}&timestamp=${Date.now()}` : 
                 API_BASE_URL;
             
             const options = {
                 method: method,
+                mode: 'cors',
+                cache: 'no-cache',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -542,18 +560,33 @@
                 options.body = JSON.stringify({action, ...data});
             }
             
-            try {
-                const response = await fetch(url, options);
-                const result = await response.json();
-                
-                if (!result.success) {
-                    throw new Error(result.error || 'API call failed');
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    console.log(`API Call attempt ${attempt}: ${action}`);
+                    const response = await fetch(url, options);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (!result.success) {
+                        throw new Error(result.error || 'API call failed');
+                    }
+                    
+                    console.log(`API Call successful: ${action}`, result);
+                    return result;
+                } catch (error) {
+                    console.error(`API call attempt ${attempt} failed for ${action}:`, error);
+                    
+                    if (attempt === retries) {
+                        throw error;
+                    }
+                    
+                    // Wait before retry
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
                 }
-                
-                return result;
-            } catch (error) {
-                console.error(`API call failed for ${action}:`, error);
-                throw error;
             }
         }
 
