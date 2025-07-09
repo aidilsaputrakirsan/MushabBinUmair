@@ -394,6 +394,33 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #065f46;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: #059669;
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -410,6 +437,9 @@
         <div class="connection-status" id="connection-status">
             📶 Mode Offline
         </div>
+
+        <!-- Toast Message -->
+        <div class="toast" id="toast"></div>
 
         <div class="header">
             <button class="back-btn" onclick="goBack()">←</button>
@@ -453,7 +483,7 @@
     </div>
 
     <script>
-        // API Configuration dengan URL GAS yang sudah di-deploy
+        // API Configuration
         const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbynjsj-MCgMxWtBl6MGOCP7bjp5PhN7WsJ9NGcEuHyEo0CWLFg6eyT8CV395c-TuPLnJw/exec';
         
         // Data surah Juz 30
@@ -504,141 +534,194 @@
         let currentPerson = null;
         let hafalanData = {};
         let isLoading = false;
+        let isOnlineMode = false;
+
+        // JSONP helper untuk bypass CORS
+        function makeJSONPRequest(url, callbackName) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                const timeoutId = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('Request timeout'));
+                }, 10000);
+
+                function cleanup() {
+                    clearTimeout(timeoutId);
+                    if (script.parentNode) {
+                        script.parentNode.removeChild(script);
+                    }
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                }
+
+                window[callbackName] = function(data) {
+                    cleanup();
+                    resolve(data);
+                };
+
+                script.onerror = function() {
+                    cleanup();
+                    reject(new Error('Script loading failed'));
+                };
+
+                script.src = url + '&callback=' + callbackName;
+                document.head.appendChild(script);
+            });
+        }
+
+        // API call dengan fallback methods
+        async function apiCall(action, method = 'GET', data = null) {
+            const timestamp = Date.now();
+            const callbackName = 'jsonp_callback_' + timestamp;
+            
+            try {
+                // Method 1: Try standard fetch first
+                if (method === 'GET') {
+                    const url = `${API_BASE_URL}?action=${action}&timestamp=${timestamp}`;
+                    
+                    try {
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            mode: 'cors',
+                            cache: 'no-cache'
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.success) {
+                                return result;
+                            }
+                        }
+                    } catch (fetchError) {
+                        console.log('Fetch failed, trying JSONP...', fetchError);
+                    }
+                    
+                    // Method 2: Fallback to JSONP for GET requests
+                    try {
+                        const result = await makeJSONPRequest(url, callbackName);
+                        if (result && result.success) {
+                            return result;
+                        }
+                    } catch (jsonpError) {
+                        console.log('JSONP failed:', jsonpError);
+                    }
+                }
+                
+                // Method 3: For POST requests, try form submission
+                if (method === 'POST' && data) {
+                    const formData = new FormData();
+                    formData.append('action', action);
+                    Object.keys(data).forEach(key => {
+                        formData.append(key, data[key]);
+                    });
+                    
+                    const response = await fetch(API_BASE_URL, {
+                        method: 'POST',
+                        body: formData,
+                        mode: 'cors'
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            return result;
+                        }
+                    }
+                }
+                
+                throw new Error('All API methods failed');
+                
+            } catch (error) {
+                console.error(`API call failed for ${action}:`, error);
+                throw error;
+            }
+        }
 
         // Initialize app
         async function initApp() {
-            updateConnectionStatus();
             showLoading(true);
+            updateConnectionStatus();
             
-            // First, test the API connection
+            // Try to load from backend first
             try {
-                console.log('Testing API connection...');
-                await apiCall('test');
-                console.log('API connection successful!');
+                console.log('Attempting to connect to server...');
+                await loadDataFromBackend();
+                isOnlineMode = true;
+                showToast('Data berhasil dimuat dari server!', 'success');
+                updateConnectionStatus(true);
             } catch (error) {
-                console.error('API connection failed:', error);
-                showError('Tidak dapat terhubung ke server. Menggunakan mode offline.');
+                console.log('Backend failed, using offline mode:', error);
+                isOnlineMode = false;
                 loadOfflineData();
-                renderMainPage();
-                updateStatsLocal();
-                showLoading(false);
-                return;
+                showToast('Menggunakan mode offline', 'error');
+                updateConnectionStatus(false);
             }
             
-            try {
-                await loadData();
-                renderMainPage();
-                await updateStats();
-                showSuccess('Data berhasil dimuat dari server!');
-            } catch (error) {
-                console.error('Error loading data:', error);
-                showError('Gagal memuat data dari server. Menggunakan data offline.');
-                loadOfflineData();
-                renderMainPage();
-                updateStatsLocal();
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // API call helper function dengan CORS handling
-        async function apiCall(action, method = 'GET', data = null, retries = 3) {
-            const url = method === 'GET' ? 
-                `${API_BASE_URL}?action=${action}&timestamp=${Date.now()}` : 
-                API_BASE_URL;
-            
-            const options = {
-                method: method,
-                mode: 'cors',
-                cache: 'no-cache',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            };
-            
-            if (method === 'POST' && data) {
-                options.body = JSON.stringify({action, ...data});
-            }
-            
-            for (let attempt = 1; attempt <= retries; attempt++) {
-                try {
-                    console.log(`API Call attempt ${attempt}: ${action}`);
-                    const response = await fetch(url, options);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    const result = await response.json();
-                    
-                    if (!result.success) {
-                        throw new Error(result.error || 'API call failed');
-                    }
-                    
-                    console.log(`API Call successful: ${action}`, result);
-                    return result;
-                } catch (error) {
-                    console.error(`API call attempt ${attempt} failed for ${action}:`, error);
-                    
-                    if (attempt === retries) {
-                        throw error;
-                    }
-                    
-                    // Wait before retry
-                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-                }
-            }
+            renderMainPage();
+            updateStats();
+            showLoading(false);
         }
 
         // Load data from backend
-        async function loadData() {
-            try {
-                const result = await apiCall('getAllData');
+        async function loadDataFromBackend() {
+            const result = await apiCall('getAllData');
+            if (result && result.data) {
                 hafalanData = result.data;
                 // Save to localStorage as backup
                 localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
                 return hafalanData;
-            } catch (error) {
-                console.error('Error loading data from backend:', error);
-                throw error;
             }
+            throw new Error('No data received from backend');
         }
 
         // Load data from localStorage (offline mode)
         function loadOfflineData() {
             const saved = localStorage.getItem('hafalanJuz30');
             if (saved) {
-                hafalanData = JSON.parse(saved);
+                try {
+                    hafalanData = JSON.parse(saved);
+                    console.log('Loaded data from localStorage');
+                } catch (e) {
+                    console.error('Error parsing localStorage data:', e);
+                    initializeEmptyData();
+                }
             } else {
-                // Initialize empty data if no localStorage
-                familyNames.forEach(name => {
-                    hafalanData[name] = {};
-                    surahList.forEach(surah => {
-                        hafalanData[name][surah.number] = false;
-                    });
-                });
-                localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
+                initializeEmptyData();
             }
         }
 
-        // Update hafalan status to backend
-        async function updateHafalanToBackend(nama, surahNumber, status) {
-            try {
-                const result = await apiCall('updateHafalan', 'POST', {
-                    nama: nama,
-                    surahNumber: surahNumber,
-                    status: status
+        // Initialize empty data structure
+        function initializeEmptyData() {
+            familyNames.forEach(name => {
+                hafalanData[name] = {};
+                surahList.forEach(surah => {
+                    hafalanData[name][surah.number] = false;
                 });
-                
-                // Also save to localStorage as backup
-                localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
-                
-                return result;
-            } catch (error) {
-                console.error('Error updating to backend:', error);
-                // Still save to localStorage for offline functionality
-                localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
-                throw error;
+            });
+            localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
+        }
+
+        // Update hafalan status
+        async function updateHafalanStatus(nama, surahNumber, status) {
+            // Optimistically update local data
+            hafalanData[nama][surahNumber] = status;
+            localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
+            
+            if (isOnlineMode) {
+                try {
+                    await apiCall('updateHafalan', 'POST', {
+                        nama: nama,
+                        surahNumber: surahNumber,
+                        status: status
+                    });
+                    showToast(`Hafalan ${nama} berhasil diupdate!`, 'success');
+                } catch (error) {
+                    console.error('Failed to update backend:', error);
+                    showToast('Perubahan disimpan offline', 'error');
+                }
+            } else {
+                showToast('Perubahan disimpan offline', 'success');
             }
         }
 
@@ -648,17 +731,26 @@
             const overlay = document.getElementById('loading-overlay');
             if (show) {
                 overlay.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
             } else {
                 overlay.style.display = 'none';
-                document.body.style.overflow = 'auto';
             }
         }
 
-        // Update connection status indicator
-        function updateConnectionStatus() {
-            const isOnline = checkConnection();
+        // Show toast message
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Update connection status
+        function updateConnectionStatus(online = null) {
             const statusElement = document.getElementById('connection-status');
+            const isOnline = online !== null ? online : navigator.onLine && isOnlineMode;
             
             if (!isOnline) {
                 statusElement.className = 'connection-status offline';
@@ -666,28 +758,12 @@
                 statusElement.style.display = 'block';
             } else {
                 statusElement.className = 'connection-status online';
-                statusElement.textContent = '🌐 Terhubung';
+                statusElement.textContent = '🌐 Online';
                 statusElement.style.display = 'block';
-                // Hide online status after 3 seconds
                 setTimeout(() => {
                     statusElement.style.display = 'none';
                 }, 3000);
             }
-        }
-
-        // Show error message
-        function showError(message) {
-            alert('❌ ' + message);
-        }
-
-        // Show success message
-        function showSuccess(message) {
-            console.log('✅ ' + message);
-        }
-
-        // Connection status checker
-        function checkConnection() {
-            return navigator.onLine;
         }
 
         // Render main page
@@ -762,57 +838,27 @@
 
         // Toggle surah completion
         async function toggleSurah(name, surahNumber) {
-            if (isLoading) return; // Prevent multiple simultaneous requests
+            if (isLoading) return;
             
             const currentStatus = hafalanData[name][surahNumber] || false;
             const newStatus = !currentStatus;
             
-            // Optimistically update UI
+            // Update UI immediately
             hafalanData[name][surahNumber] = newStatus;
             renderSurahList(name);
             document.getElementById('header-subtitle').textContent = `Progress: ${calculateProgress(name)}%`;
             
+            // Update backend
             try {
-                showLoading(true);
-                await updateHafalanToBackend(name, surahNumber, newStatus);
-                showSuccess(`Hafalan ${name} untuk ${getSurahName(surahNumber)} berhasil diupdate!`);
-                await updateStats(); // Refresh stats from backend
+                await updateHafalanStatus(name, surahNumber, newStatus);
+                updateStats();
             } catch (error) {
-                // Revert on error
-                hafalanData[name][surahNumber] = currentStatus;
-                renderSurahList(name);
-                document.getElementById('header-subtitle').textContent = `Progress: ${calculateProgress(name)}%`;
-                showError('Gagal menyimpan perubahan. Data disimpan secara offline.');
-                updateStatsLocal(); // Update with local calculation
-            } finally {
-                showLoading(false);
+                console.error('Error updating hafalan:', error);
             }
         }
 
-        // Helper function to get surah name by number
-        function getSurahName(surahNumber) {
-            const surah = surahList.find(s => s.number === surahNumber);
-            return surah ? surah.name : `Surah ${surahNumber}`;
-        }
-
-        // Update statistics from backend
-        async function updateStats() {
-            try {
-                const result = await apiCall('getProgress');
-                const stats = result.data.summary;
-                
-                document.getElementById('total-completed').textContent = stats.totalCompleted;
-                document.getElementById('avg-progress').textContent = stats.averageProgress + '%';
-                document.getElementById('leading-person').textContent = stats.leadingPerson || '-';
-            } catch (error) {
-                console.error('Error updating stats from backend:', error);
-                // Fallback to local calculation
-                updateStatsLocal();
-            }
-        }
-
-        // Fallback function for local stats calculation
-        function updateStatsLocal() {
+        // Update statistics
+        function updateStats() {
             let totalCompleted = 0;
             let totalProgress = 0;
             let leadingPerson = '';
@@ -837,49 +883,41 @@
         }
 
         // Go back to main page
-        async function goBack() {
+        function goBack() {
             document.getElementById('main-page').style.display = 'block';
             document.getElementById('detail-page').style.display = 'none';
             document.querySelector('.back-btn').style.display = 'none';
             document.getElementById('header-title').textContent = 'Kelas L3 - Mushab Bin Umair';
             document.getElementById('header-subtitle').textContent = 'Tracking Hafalan Juz 30';
             
-            // Refresh data when going back
-            try {
-                showLoading(true);
-                await loadData();
-                renderMainPage();
-                await updateStats();
-            } catch (error) {
-                console.error('Error refreshing data:', error);
-                renderMainPage();
-                updateStatsLocal();
-            } finally {
-                showLoading(false);
-            }
+            renderMainPage();
+            updateStats();
         }
 
         // Initialize app when page loads
         window.addEventListener('load', initApp);
 
-        // Listen for online/offline events
+        // Handle online/offline events
         window.addEventListener('online', () => {
-            console.log('Koneksi tersambung kembali');
-            updateConnectionStatus();
-            // Optionally refresh data when back online
-            if (!isLoading) {
-                loadData().then(() => {
+            console.log('Connection restored');
+            if (!isOnlineMode) {
+                // Try to reconnect to backend
+                loadDataFromBackend().then(() => {
+                    isOnlineMode = true;
+                    updateConnectionStatus(true);
+                    showToast('Kembali online!', 'success');
                     renderMainPage();
                     updateStats();
                 }).catch(() => {
-                    console.log('Still using offline mode');
+                    console.log('Still unable to connect to backend');
                 });
             }
         });
 
         window.addEventListener('offline', () => {
-            console.log('Koneksi terputus - mode offline');
-            updateConnectionStatus();
+            console.log('Connection lost');
+            updateConnectionStatus(false);
+            showToast('Mode offline', 'error');
         });
     </script>
 </body>
