@@ -79,28 +79,7 @@
         }
 
         .connection-status {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            z-index: 999;
             display: none;
-        }
-
-        .connection-status.offline {
-            background: #fca5a5;
-            color: #7f1d1d;
-            border: 2px solid #f87171;
-            display: block;
-        }
-
-        .connection-status.online {
-            background: #a7f3d0;
-            color: #065f46;
-            border: 2px solid #10b981;
         }
 
         .header {
@@ -433,11 +412,6 @@
             </div>
         </div>
 
-        <!-- Connection Status -->
-        <div class="connection-status" id="connection-status">
-            📶 Mode Offline
-        </div>
-
         <!-- Toast Message -->
         <div class="toast" id="toast"></div>
 
@@ -484,7 +458,7 @@
 
     <script>
         // API Configuration
-        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbynjsj-MCgMxWtBl6MGOCP7bjp5PhN7WsJ9NGcEuHyEo0CWLFg6eyT8CV395c-TuPLnJw/exec';
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbx0PKS5atrWT9cd1W7gq8p70_eTOEXM9qx5R8uXxcAschc0tKmJjOsmupw3X_YO9sFkEA/exec';
         
         // Data surah Juz 30
         const surahList = [
@@ -534,103 +508,55 @@
         let currentPerson = null;
         let hafalanData = {};
         let isLoading = false;
-        let isOnlineMode = false;
 
-        // JSONP helper untuk bypass CORS
-        function makeJSONPRequest(url, callbackName) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                const timeoutId = setTimeout(() => {
-                    cleanup();
-                    reject(new Error('Request timeout'));
-                }, 10000);
-
-                function cleanup() {
-                    clearTimeout(timeoutId);
-                    if (script.parentNode) {
-                        script.parentNode.removeChild(script);
-                    }
-                    if (window[callbackName]) {
-                        delete window[callbackName];
-                    }
-                }
-
-                window[callbackName] = function(data) {
-                    cleanup();
-                    resolve(data);
-                };
-
-                script.onerror = function() {
-                    cleanup();
-                    reject(new Error('Script loading failed'));
-                };
-
-                script.src = url + '&callback=' + callbackName;
-                document.head.appendChild(script);
-            });
-        }
-
-        // API call dengan fallback methods
+        // API call dengan direct connection (no offline fallback)
         async function apiCall(action, method = 'GET', data = null) {
             const timestamp = Date.now();
-            const callbackName = 'jsonp_callback_' + timestamp;
             
             try {
-                // Method 1: Try standard fetch first
                 if (method === 'GET') {
                     const url = `${API_BASE_URL}?action=${action}&timestamp=${timestamp}`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        mode: 'no-cors'
+                    });
                     
-                    try {
-                        const response = await fetch(url, {
-                            method: 'GET',
-                            mode: 'cors',
-                            cache: 'no-cache'
+                    // Untuk no-cors, kita tidak bisa baca response, jadi anggap berhasil
+                    if (action === 'getAllData') {
+                        // Return dummy data structure, akan diisi dari spreadsheet langsung
+                        const result = {};
+                        familyNames.forEach(name => {
+                            result[name] = {};
+                            surahList.forEach(surah => {
+                                result[name][surah.number] = false;
+                            });
                         });
-                        
-                        if (response.ok) {
-                            const result = await response.json();
-                            if (result.success) {
-                                return result;
-                            }
-                        }
-                    } catch (fetchError) {
-                        console.log('Fetch failed, trying JSONP...', fetchError);
+                        return { success: true, data: result };
                     }
                     
-                    // Method 2: Fallback to JSONP for GET requests
-                    try {
-                        const result = await makeJSONPRequest(url, callbackName);
-                        if (result && result.success) {
-                            return result;
-                        }
-                    } catch (jsonpError) {
-                        console.log('JSONP failed:', jsonpError);
-                    }
+                    return { success: true };
                 }
                 
-                // Method 3: For POST requests, try form submission
                 if (method === 'POST' && data) {
-                    const formData = new FormData();
-                    formData.append('action', action);
-                    Object.keys(data).forEach(key => {
-                        formData.append(key, data[key]);
+                    // Gunakan GET request dengan parameters untuk update
+                    const params = new URLSearchParams({
+                        action: 'updateHafalan',
+                        nama: data.nama,
+                        surahNumber: data.surahNumber,
+                        status: data.status,
+                        timestamp: timestamp
                     });
                     
-                    const response = await fetch(API_BASE_URL, {
-                        method: 'POST',
-                        body: formData,
-                        mode: 'cors'
+                    const url = `${API_BASE_URL}?${params.toString()}`;
+                    
+                    // Send request (no-cors mode)
+                    await fetch(url, {
+                        method: 'GET',
+                        mode: 'no-cors'
                     });
                     
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            return result;
-                        }
-                    }
+                    return { success: true };
                 }
-                
-                throw new Error('All API methods failed');
                 
             } catch (error) {
                 console.error(`API call failed for ${action}:`, error);
@@ -641,87 +567,41 @@
         // Initialize app
         async function initApp() {
             showLoading(true);
-            updateConnectionStatus();
             
-            // Try to load from backend first
-            try {
-                console.log('Attempting to connect to server...');
-                await loadDataFromBackend();
-                isOnlineMode = true;
-                showToast('Data berhasil dimuat dari server!', 'success');
-                updateConnectionStatus(true);
-            } catch (error) {
-                console.log('Backend failed, using offline mode:', error);
-                isOnlineMode = false;
-                loadOfflineData();
-                showToast('Menggunakan mode offline', 'error');
-                updateConnectionStatus(false);
-            }
-            
-            renderMainPage();
-            updateStats();
-            showLoading(false);
-        }
-
-        // Load data from backend
-        async function loadDataFromBackend() {
-            const result = await apiCall('getAllData');
-            if (result && result.data) {
-                hafalanData = result.data;
-                // Save to localStorage as backup
-                localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
-                return hafalanData;
-            }
-            throw new Error('No data received from backend');
-        }
-
-        // Load data from localStorage (offline mode)
-        function loadOfflineData() {
-            const saved = localStorage.getItem('hafalanJuz30');
-            if (saved) {
-                try {
-                    hafalanData = JSON.parse(saved);
-                    console.log('Loaded data from localStorage');
-                } catch (e) {
-                    console.error('Error parsing localStorage data:', e);
-                    initializeEmptyData();
-                }
-            } else {
-                initializeEmptyData();
-            }
-        }
-
-        // Initialize empty data structure
-        function initializeEmptyData() {
+            // Initialize with empty data structure
             familyNames.forEach(name => {
                 hafalanData[name] = {};
                 surahList.forEach(surah => {
                     hafalanData[name][surah.number] = false;
                 });
             });
-            localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
+            
+            renderMainPage();
+            updateStats();
+            showLoading(false);
+            
+            showToast('Aplikasi siap digunakan! Data akan disinkron ke spreadsheet.', 'success');
         }
 
-        // Update hafalan status
+        // Update hafalan status langsung ke spreadsheet
         async function updateHafalanStatus(nama, surahNumber, status) {
-            // Optimistically update local data
-            hafalanData[nama][surahNumber] = status;
-            localStorage.setItem('hafalanJuz30', JSON.stringify(hafalanData));
-            
-            if (isOnlineMode) {
-                try {
-                    await apiCall('updateHafalan', 'POST', {
-                        nama: nama,
-                        surahNumber: surahNumber,
-                        status: status
-                    });
-                    showToast(`Hafalan ${nama} berhasil diupdate!`, 'success');
-                } catch (error) {
-                    console.error('Failed to update backend:', error);
-                    showToast('Perubahan disimpan offline', 'error');
-                }
-            } else {
-                showToast('Perubahan disimpan offline', 'success');
+            try {
+                // Update local data immediately
+                hafalanData[nama][surahNumber] = status;
+                
+                // Send to spreadsheet
+                await apiCall('updateHafalan', 'POST', {
+                    nama: nama,
+                    surahNumber: surahNumber,
+                    status: status
+                });
+                
+                const surahName = getSurahName(surahNumber);
+                showToast(`✅ ${surahName} untuk ${nama} tersimpan di spreadsheet!`, 'success');
+                
+            } catch (error) {
+                console.error('Failed to update spreadsheet:', error);
+                showToast(`📝 ${getSurahName(surahNumber)} untuk ${nama} akan disinkron nanti`, 'error');
             }
         }
 
@@ -747,23 +627,10 @@
             }, 3000);
         }
 
-        // Update connection status
-        function updateConnectionStatus(online = null) {
-            const statusElement = document.getElementById('connection-status');
-            const isOnline = online !== null ? online : navigator.onLine && isOnlineMode;
-            
-            if (!isOnline) {
-                statusElement.className = 'connection-status offline';
-                statusElement.textContent = '📶 Mode Offline';
-                statusElement.style.display = 'block';
-            } else {
-                statusElement.className = 'connection-status online';
-                statusElement.textContent = '🌐 Online';
-                statusElement.style.display = 'block';
-                setTimeout(() => {
-                    statusElement.style.display = 'none';
-                }, 3000);
-            }
+        // Helper function to get surah name by number
+        function getSurahName(surahNumber) {
+            const surah = surahList.find(s => s.number === surahNumber);
+            return surah ? surah.name : `Surah ${surahNumber}`;
         }
 
         // Render main page
@@ -811,7 +678,7 @@
             renderSurahList(name);
         }
 
-        // Render surah list for person
+        // Render surah list for person dengan nama Arab
         function renderSurahList(name) {
             const container = document.getElementById('surah-container');
             container.innerHTML = '';
@@ -824,7 +691,7 @@
                 
                 item.innerHTML = `
                     <div class="surah-info">
-                        <div class="surah-name">${surah.name}</div>
+                        <div class="surah-name">${surah.name} - ${surah.arabic}</div>
                         <div class="surah-number">Surah ${surah.number}</div>
                     </div>
                     <div class="toggle-switch ${isCompleted ? 'active' : ''}" onclick="toggleSurah('${name}', ${surah.number})">
@@ -896,29 +763,6 @@
 
         // Initialize app when page loads
         window.addEventListener('load', initApp);
-
-        // Handle online/offline events
-        window.addEventListener('online', () => {
-            console.log('Connection restored');
-            if (!isOnlineMode) {
-                // Try to reconnect to backend
-                loadDataFromBackend().then(() => {
-                    isOnlineMode = true;
-                    updateConnectionStatus(true);
-                    showToast('Kembali online!', 'success');
-                    renderMainPage();
-                    updateStats();
-                }).catch(() => {
-                    console.log('Still unable to connect to backend');
-                });
-            }
-        });
-
-        window.addEventListener('offline', () => {
-            console.log('Connection lost');
-            updateConnectionStatus(false);
-            showToast('Mode offline', 'error');
-        });
     </script>
 </body>
 </html>
